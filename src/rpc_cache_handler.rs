@@ -22,7 +22,7 @@ pub trait RpcCacheHandler: Send + Sync {
     fn extract_cache_key(&self, params: &Value) -> Result<Option<String>>;
 
     fn extract_cache_value(&self, result: &Value) -> Result<(bool, String)> {
-        Ok((true, serde_json::to_string(result)?))
+        Ok((!result.is_null(), serde_json::to_string(result)?))
     }
 }
 
