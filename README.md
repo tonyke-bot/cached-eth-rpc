@@ -20,7 +20,7 @@ Mainly supported requests with determined block number. Other methods will be di
 - eth_getBalance
 - eth_getBlockByNumber
 - eth_getCode
+- eth_getStorageAt
 - eth_getTransactionByHash
-- eth_getTransactionCount
 - eth_getTransactionCount
 
