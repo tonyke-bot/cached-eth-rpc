@@ -8,7 +8,9 @@ COPY ./src ./src
 RUN cargo build --release
 
 FROM debian:buster-slim
-RUN apt update && apt install -y openssl
+RUN apt update  \
+    && apt install -y openssl ca-certificates
+RUN update-ca-certificates
 
 COPY --from=builder /app/target/release/cached-eth-rpc /app/cached-eth-rpc
 COPY ./docker-entrypoint.sh /app/docker-entrypoint.sh
