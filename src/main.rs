@@ -55,18 +55,18 @@ async fn read_cache(
         .extract_cache_key(params)
         .context("fail to extract cache key")?;
 
-    if cache_key.is_none() {
-        return Ok(CacheStatus::NotAvailable);
-    }
+    let cache_key = match cache_key {
+        Some(cache_key) => cache_key,
+        None => return Ok(CacheStatus::NotAvailable),
+    };
 
-    let cache_key = cache_key.unwrap();
     let cache = cache_store.lock().unwrap();
-
-    let value = (*cache).get(&cache_key)
-        .map(|v| v.clone());
+    let value = cache.get(&cache_key);
 
     Ok(if let Some(value) = value {
-        CacheStatus::Cached(cache_key, serde_json::from_str::<Value>(&value).context("fail to deserialize cache value")?)
+        let cache_value = serde_json::from_str::<Value>(value)
+            .context("fail to deserialize cache value")?;
+        CacheStatus::Cached(cache_key, cache_value)
     } else {
         CacheStatus::Missed(cache_key)
     })
@@ -226,11 +226,13 @@ async fn main() -> std::io::Result<()> {
 
     let app_state = web::Data::new(app_state);
 
+    log::info!("Server listening on {}:{}", arg.bind, arg.port);
+
     HttpServer::new(move ||
         App::new()
             .service(rpc_call)
             .app_data(app_state.clone()))
-        .bind(("127.0.0.1", arg.port))?
+        .bind((arg.bind, arg.port))?
         .run()
         .await
 }
