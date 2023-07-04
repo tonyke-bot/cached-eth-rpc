@@ -12,5 +12,5 @@ pub(super) fn extract_address_cache_key(params: &Value) -> anyhow::Result<Option
     if !block_tag.starts_with("0x") { return Ok(None); }
     let block_number = u64::from_str_radix(&block_tag[2..], 16).context("block number not a hex string")?;
 
-    Ok(Some(format!("{:x}-{}", block_number, account)))
+    Ok(Some(format!("0x{:x}-{}", block_number, account)))
 }

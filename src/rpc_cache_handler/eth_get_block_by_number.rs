@@ -22,6 +22,6 @@ impl RpcCacheHandler for EthGetBlockByNumber {
         let block_number = u64::from_str_radix(&block_number[2..], 16)
             .context("block number not a hex string")?;
 
-        Ok(Some(format!("{:x}-{}", block_number, transaction_detail)))
+        Ok(Some(format!("0x{:x}-{}", block_number, transaction_detail)))
     }
 }
