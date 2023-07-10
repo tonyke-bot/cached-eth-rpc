@@ -27,12 +27,14 @@ Following redirection will be made:
 ### Supported methods
 Mainly supported requests with determined block number. Other methods will be directly send to the configured ETH rpc endpoint.
 
-- eth_call
-- eth_chainId
-- eth_getBalance
-- eth_getBlockByNumber
-- eth_getCode
-- eth_getStorageAt
-- eth_getTransactionByHash
-- eth_getTransactionCount
-
+- `eth_call`
+- `eth_chainId`
+- `eth_getBalance`
+- `eth_getBlockByNumber`
+- `eth_getCode`
+- `eth_getStorageAt`
+- `eth_getTransactionByHash`
+- `eth_getTransactionCount`
+- `eth_getTransactionReceipt`
+- `eth_getTransactionByBlockNumberAndIndex`
+- `eth_getTransactionByBlockHashAndIndex`

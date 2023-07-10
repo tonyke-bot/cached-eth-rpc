@@ -78,6 +78,7 @@ async fn rpc_call(
     data: web::Data<AppState>,
     body: web::Json<Value>,
 ) -> Result<HttpResponse, Error> {
+    println!("body: {:?}", body);
     let (chain, ) = path.into_inner();
     let chain_state = data
         .chains
@@ -136,7 +137,7 @@ async fn rpc_call(
                 "jsonrpc": "2.0",
                 "id": id.clone(),
                 "method": method.to_string(),
-                "params": (*params).clone(),
+                "params": params.clone(),
             })
         }).collect::<Vec<Value>>());
 
@@ -160,7 +161,7 @@ async fn rpc_call(
 
             let error = &response["error"];
             if !error.is_null() {
-                log::error!("rpc error: {}, request: {}({})", error.to_string(), method, params.to_string());
+                log::error!("rpc error: {}, request: {}({}), response: {}", error.to_string(), method, params.to_string(), response.to_string());
                 return Err(error::ErrorInternalServerError("remote rpc error"));
             }
 
