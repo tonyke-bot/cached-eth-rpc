@@ -1,3 +1,4 @@
+use crate::rpc_cache_handler::common;
 use anyhow::Context;
 use primitive_types::H256;
 use serde_json::Value;
@@ -9,16 +10,15 @@ pub(super) fn extract_address_cache_key(params: &Value) -> anyhow::Result<Option
         .context("params not found or not an array")?;
 
     let account = params[0].as_str().context("params[0] not a string")?;
-    let block_tag = params[1].as_str().context("params[1] not a string")?;
+    let block_tag = common::extract_and_format_block_tag(&params[1])?;
 
-    if !block_tag.starts_with("0x") {
+    if block_tag.is_none() {
         return Ok(None);
     }
 
-    let block_number =
-        u64::from_str_radix(&block_tag[2..], 16).context("block number not a hex string")?;
+    let block_tag = block_tag.unwrap();
 
-    Ok(Some(format!("0x{:x}-{}", block_number, account)))
+    Ok(Some(format!("{}-{}", block_tag, account)))
 }
 
 pub(super) fn extract_transaction_cache_value(result: &Value) -> anyhow::Result<(bool, String)> {
