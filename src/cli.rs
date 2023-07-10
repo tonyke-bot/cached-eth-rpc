@@ -1,6 +1,6 @@
-use std::str::FromStr;
-use clap::{Parser};
+use clap::Parser;
 use reqwest::Url;
+use std::str::FromStr;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

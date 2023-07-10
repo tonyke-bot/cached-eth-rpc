@@ -1,6 +1,6 @@
 use serde_json::Value;
-use crate::rpc_cache_handler::common::extract_address_cache_key;
 
+use crate::rpc_cache_handler::common::extract_address_cache_key;
 use crate::rpc_cache_handler::RpcCacheHandler;
 
 #[derive(Default, Clone)]
