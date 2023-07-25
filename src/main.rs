@@ -78,7 +78,6 @@ async fn rpc_call(
     data: web::Data<AppState>,
     body: web::Json<Value>,
 ) -> Result<HttpResponse, Error> {
-    println!("body: {:?}", body);
     let (chain,) = path.into_inner();
     let chain_state = data
         .chains
