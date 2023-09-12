@@ -1,9 +1,9 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
 
 use actix_web::{error, web, App, Error, HttpResponse, HttpServer};
 use anyhow::Context;
 use clap::Parser;
+use dashmap::DashMap;
 use env_logger::Env;
 use reqwest::Url;
 use serde_json::{json, Value};
@@ -16,14 +16,12 @@ mod rpc_cache_handler;
 
 struct ChainState {
     rpc_url: Url,
-
-    // method_name -> (handler, cache_key -> cache_value)
     cache_entries: HashMap<String, CacheEntry>,
 }
 
 struct CacheEntry {
     handler: Box<dyn RpcCacheHandler>,
-    cache_store: Mutex<HashMap<String, String>>,
+    cache_store: DashMap<String, String>,
 }
 
 impl CacheEntry {
@@ -60,9 +58,9 @@ async fn request_rpc(rpc_url: Url, body: &Value) -> anyhow::Result<Value> {
     Ok(result)
 }
 
-async fn read_cache(
+fn read_cache(
     handler: &dyn RpcCacheHandler,
-    cache_store: &Mutex<HashMap<String, String>>,
+    cache_store: &DashMap<String, String>,
     params: &Value,
 ) -> anyhow::Result<CacheStatus> {
     let cache_key = handler
@@ -74,12 +72,11 @@ async fn read_cache(
         None => return Ok(CacheStatus::NotAvailable),
     };
 
-    let cache = cache_store.lock().unwrap();
-    let value = cache.get(&cache_key);
+    let value = cache_store.get(&cache_key);
 
     Ok(if let Some(value) = value {
-        let cache_value =
-            serde_json::from_str::<Value>(value).context("fail to deserialize cache value")?;
+        let cache_value = serde_json::from_str::<Value>(value.value())
+            .context("fail to deserialize cache value")?;
         CacheStatus::Cached(cache_key, cache_value)
     } else {
         CacheStatus::Missed(cache_key)
@@ -119,8 +116,7 @@ async fn rpc_call(
 
         ordered_id.push(id);
 
-        let cache_entry = chain_state.cache_entries.get(method);
-        let cache_entry = match cache_entry {
+        let cache_entry = match chain_state.cache_entries.get(method) {
             Some(cache_entry) => cache_entry,
             None => {
                 uncached_requests.insert(id, (method.to_string(), params.clone(), None));
@@ -132,8 +128,7 @@ async fn rpc_call(
             cache_entry.handler.as_ref(),
             &cache_entry.cache_store,
             params,
-        )
-        .await;
+        );
 
         match result {
             Err(err) => {
@@ -212,6 +207,7 @@ async fn rpc_call(
             };
 
             let cache_entry = chain_state.cache_entries.get(method).unwrap();
+
             let (can_cache, extracted_value) = cache_entry
                 .handler
                 .extract_cache_value(result)
@@ -220,8 +216,6 @@ async fn rpc_call(
             if can_cache {
                 cache_entry
                     .cache_store
-                    .lock()
-                    .unwrap()
                     .insert(cache_key.clone(), extracted_value);
             }
         }

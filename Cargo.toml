@@ -9,6 +9,7 @@ edition = "2021"
 actix-web = "4"
 anyhow = "1.0.71"
 clap = { version = "4.3.4", features = ["derive"] }
+dashmap = "5.5.3"
 env_logger = "0.10.0"
 futures = "0.3.28"
 hex = "0.4.3"
