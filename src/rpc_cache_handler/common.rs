@@ -41,7 +41,7 @@ pub(super) fn extract_and_format_block_tag(value: &Value) -> anyhow::Result<Opti
         }
         Value::Object(block_tag) => {
             if let Some(Value::String(block_number_str)) = block_tag.get("blockNumber") {
-                let block_number = u64::from_str_radix(&block_number_str, 16)
+                let block_number = u64::from_str_radix(block_number_str, 16)
                     .context("block number not a hex string")?;
 
                 return Ok(Some(format!("0x{}", block_number)));

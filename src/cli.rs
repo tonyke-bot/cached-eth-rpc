@@ -18,7 +18,7 @@ pub struct Cli {
 }
 
 fn endpoint_parser(s: &str) -> Result<(String, Url), String> {
-    let part = s.splitn(2, "=").collect::<Vec<_>>();
+    let part = s.splitn(2, '=').collect::<Vec<_>>();
 
     if part.len() != 2 {
         return Err(format!("Invalid endpoint format: {}", part[0]));

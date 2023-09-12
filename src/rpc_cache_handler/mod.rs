@@ -40,16 +40,16 @@ pub type RpcCacheHandlerFactory = fn() -> Box<dyn RpcCacheHandler>;
 
 pub fn all_factories() -> Vec<RpcCacheHandlerFactory> {
     vec![
-        || Box::new(EthCall::default()) as Box<dyn RpcCacheHandler>,
-        || Box::new(EthChainId::default()) as Box<dyn RpcCacheHandler>,
-        || Box::new(EthGetBalance::default()) as Box<dyn RpcCacheHandler>,
-        || Box::new(EthGetBlockByNumber::default()) as Box<dyn RpcCacheHandler>,
-        || Box::new(EthGetCode::default()) as Box<dyn RpcCacheHandler>,
-        || Box::new(EthGetStorageAt::default()) as Box<dyn RpcCacheHandler>,
-        || Box::new(EthGetTransactionByBlockHashAndIndex::default()) as Box<dyn RpcCacheHandler>,
-        || Box::new(EthGetTransactionByBlockNumberAndIndex::default()) as Box<dyn RpcCacheHandler>,
-        || Box::new(EthGetTransactionByHash::default()) as Box<dyn RpcCacheHandler>,
-        || Box::new(EthGetTransactionCount::default()) as Box<dyn RpcCacheHandler>,
-        || Box::new(EthGetTransactionReceipt::default()) as Box<dyn RpcCacheHandler>,
+        || Box::new(EthCall) as Box<dyn RpcCacheHandler>,
+        || Box::new(EthChainId) as Box<dyn RpcCacheHandler>,
+        || Box::new(EthGetBalance) as Box<dyn RpcCacheHandler>,
+        || Box::new(EthGetBlockByNumber) as Box<dyn RpcCacheHandler>,
+        || Box::new(EthGetCode) as Box<dyn RpcCacheHandler>,
+        || Box::new(EthGetStorageAt) as Box<dyn RpcCacheHandler>,
+        || Box::new(EthGetTransactionByBlockHashAndIndex) as Box<dyn RpcCacheHandler>,
+        || Box::new(EthGetTransactionByBlockNumberAndIndex) as Box<dyn RpcCacheHandler>,
+        || Box::new(EthGetTransactionByHash) as Box<dyn RpcCacheHandler>,
+        || Box::new(EthGetTransactionCount) as Box<dyn RpcCacheHandler>,
+        || Box::<EthGetTransactionReceipt>::default() as Box<dyn RpcCacheHandler>,
     ]
 }

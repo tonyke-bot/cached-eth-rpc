@@ -18,7 +18,21 @@ struct ChainState {
     rpc_url: Url,
 
     // method_name -> (handler, cache_key -> cache_value)
-    cache: HashMap<String, (Box<dyn RpcCacheHandler>, Mutex<HashMap<String, String>>)>,
+    cache_entries: HashMap<String, CacheEntry>,
+}
+
+struct CacheEntry {
+    handler: Box<dyn RpcCacheHandler>,
+    cache_store: Mutex<HashMap<String, String>>,
+}
+
+impl CacheEntry {
+    fn new(handler: Box<dyn RpcCacheHandler>) -> Self {
+        Self {
+            handler,
+            cache_store: Default::default(),
+        }
+    }
 }
 
 #[derive(Default)]
@@ -47,7 +61,7 @@ async fn request_rpc(rpc_url: Url, body: &Value) -> anyhow::Result<Value> {
 }
 
 async fn read_cache(
-    handler: &Box<dyn RpcCacheHandler>,
+    handler: &dyn RpcCacheHandler,
     cache_store: &Mutex<HashMap<String, String>>,
     params: &Value,
 ) -> anyhow::Result<CacheStatus> {
@@ -105,14 +119,21 @@ async fn rpc_call(
 
         ordered_id.push(id);
 
-        let cache = chain_state.cache.get(method);
-        if cache.is_none() {
-            uncached_requests.insert(id, (method.to_string(), params.clone(), None));
-            continue;
-        }
+        let cache_entry = chain_state.cache_entries.get(method);
+        let cache_entry = match cache_entry {
+            Some(cache_entry) => cache_entry,
+            None => {
+                uncached_requests.insert(id, (method.to_string(), params.clone(), None));
+                continue;
+            }
+        };
 
-        let (handler, cache_store) = cache.unwrap();
-        let result = read_cache(&handler, &cache_store, params).await;
+        let result = read_cache(
+            cache_entry.handler.as_ref(),
+            &cache_entry.cache_store,
+            params,
+        )
+        .await;
 
         match result {
             Err(err) => {
@@ -134,7 +155,7 @@ async fn rpc_call(
         }
     }
 
-    if uncached_requests.len() > 0 {
+    if !uncached_requests.is_empty() {
         let request_body = Value::Array(
             uncached_requests
                 .iter()
@@ -190,13 +211,15 @@ async fn rpc_call(
                 None => continue,
             };
 
-            let (handler, cache_store) = chain_state.cache.get(method).unwrap();
-            let (can_cache, extracted_value) = handler
-                .extract_cache_value(&result)
+            let cache_entry = chain_state.cache_entries.get(method).unwrap();
+            let (can_cache, extracted_value) = cache_entry
+                .handler
+                .extract_cache_value(result)
                 .expect("fail to extract cache value");
 
             if can_cache {
-                cache_store
+                cache_entry
+                    .cache_store
                     .lock()
                     .unwrap()
                     .insert(cache_key.clone(), extracted_value);
@@ -238,15 +261,14 @@ async fn main() -> std::io::Result<()> {
 
         let mut chain_state = ChainState {
             rpc_url: rpc_url.clone(),
-            cache: HashMap::new(),
+            cache_entries: HashMap::new(),
         };
 
         for factory in &handler_factories {
             let handler = factory();
-            chain_state.cache.insert(
-                handler.method_name().to_string(),
-                (handler, Default::default()),
-            );
+            chain_state
+                .cache_entries
+                .insert(handler.method_name().to_string(), CacheEntry::new(handler));
         }
 
         app_state.chains.insert(name.to_string(), chain_state);
