@@ -6,6 +6,8 @@ use clap::Parser;
 use dashmap::DashMap;
 use env_logger::Env;
 use reqwest::Url;
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Serializer};
 use serde_json::{json, Value};
 
 use crate::cli::Cli;
@@ -18,6 +20,50 @@ struct ChainState {
     rpc_url: Url,
     cache_entries: HashMap<String, CacheEntry>,
 }
+
+impl ChainState {
+    fn new(rpc_url: Url) -> Self {
+        Self {
+            rpc_url,
+            cache_entries: Default::default(),
+        }
+    }
+
+    fn dump<W: std::io::Write>(&self, w: W) -> anyhow::Result<()> {
+        let mut se = serde_json::Serializer::new(w);
+        let mut map_se = se.serialize_map(None)?;
+
+        for (method, cache_entry) in self
+            .cache_entries
+            .iter()
+            .filter(|(_, entries)| !entries.cache_store.is_empty())
+        {
+            map_se.serialize_entry(method, &cache_entry.cache_store)?;
+        }
+
+        map_se.end()?;
+
+        Ok(())
+    }
+
+    fn load<R: std::io::Read>(&mut self, r: R) -> anyhow::Result<()> {
+        let mut de = serde_json::Deserializer::from_reader(r);
+        let map = HashMap::<String, DashMap<String, String>>::deserialize(&mut de)?;
+
+        for (method, cache_store) in map {
+            let entry = match self.cache_entries.get_mut(&method) {
+                None => continue,
+                Some(entry) => entry,
+            };
+
+            entry.cache_store = cache_store;
+        }
+
+        Ok(())
+    }
+}
+
+pub type ChainStorePersistedCache = HashMap<String, DashMap<String, String>>;
 
 struct CacheEntry {
     handler: Box<dyn RpcCacheHandler>,
@@ -253,10 +299,7 @@ async fn main() -> std::io::Result<()> {
     for (name, rpc_url) in arg.endpoints.iter() {
         log::info!("Adding endpoint {} linked to {}", name, rpc_url);
 
-        let mut chain_state = ChainState {
-            rpc_url: rpc_url.clone(),
-            cache_entries: HashMap::new(),
-        };
+        let mut chain_state = ChainState::new(rpc_url.clone());
 
         for factory in &handler_factories {
             let handler = factory();
@@ -268,12 +311,52 @@ async fn main() -> std::io::Result<()> {
         app_state.chains.insert(name.to_string(), chain_state);
     }
 
+    if let Some(datadir) = &arg.datadir {
+        if !std::path::Path::new(datadir).exists() {
+            std::fs::create_dir_all(datadir).expect("fail to create data directory");
+        }
+
+        for (name, chain_state) in app_state.chains.iter_mut() {
+            log::info!("Loading cache table {} from {}", name, datadir);
+
+            let path = std::path::Path::new(&datadir).join(name.to_lowercase());
+            let exists = path.exists();
+            if !exists {
+                continue;
+            }
+
+            match std::fs::File::open(path) {
+                Err(err) => log::error!("fail to open cache file because: {}", err),
+                Ok(file) => chain_state.load(file).expect("fail to load cache table"),
+            };
+        }
+    }
+
     let app_state = web::Data::new(app_state);
 
     log::info!("Server listening on {}:{}", arg.bind, arg.port);
 
-    HttpServer::new(move || App::new().service(rpc_call).app_data(app_state.clone()))
-        .bind((arg.bind, arg.port))?
-        .run()
-        .await
+    {
+        let app_state = app_state.clone();
+
+        HttpServer::new(move || App::new().service(rpc_call).app_data(app_state.clone()))
+            .bind((arg.bind, arg.port))?
+            .run()
+            .await?;
+    }
+
+    log::info!("Server stopped");
+
+    if let Some(datadir) = &arg.datadir {
+        for (name, chain_state) in app_state.chains.iter() {
+            log::info!("Persisting cache table {} to {}", name, datadir);
+
+            let path = std::path::Path::new(&datadir).join(name.to_lowercase());
+            let file = std::fs::File::create(path).expect("fail to create file");
+
+            chain_state.dump(file).expect("fail to dump cache table");
+        }
+    }
+
+    Ok(())
 }

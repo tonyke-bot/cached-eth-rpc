@@ -4,7 +4,9 @@ RUN apt update && apt install -y libssl-dev
 RUN cargo install cargo-chef --locked
 
 FROM chef AS planner
-COPY . .
+COPY src .
+COPY Cargo.toml .
+COPY Cargo.lock .
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder

@@ -15,6 +15,13 @@ pub struct Cli {
     /// Number of times to greet
     #[arg(short, long = "endpoint", value_parser = endpoint_parser)]
     pub endpoints: Vec<(String, Url)>,
+
+    #[arg(
+        short,
+        long,
+        help = "Path to data directory. If not specified, data persistence is disabled."
+    )]
+    pub datadir: Option<String>,
 }
 
 fn endpoint_parser(s: &str) -> Result<(String, Url), String> {
