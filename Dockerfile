@@ -1,10 +1,9 @@
-FROM rust:1 as chef
+FROM lukemathwalker/cargo-chef:latest-rust-1 AS chef
 WORKDIR /app/
 RUN apt update && apt install -y libssl-dev
-RUN cargo install cargo-chef --locked
 
 FROM chef AS planner
-COPY src .
+COPY src ./src
 COPY Cargo.toml .
 COPY Cargo.lock .
 RUN cargo chef prepare --recipe-path recipe.json
@@ -12,7 +11,9 @@ RUN cargo chef prepare --recipe-path recipe.json
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
-COPY . .
+COPY src ./src
+COPY Cargo.toml .
+COPY Cargo.lock .
 RUN cargo build --release
 
 FROM debian:buster-slim
