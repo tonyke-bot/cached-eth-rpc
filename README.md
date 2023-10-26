@@ -7,6 +7,8 @@ Multiple endpoints/chains can be configured to be cached.
 docker run \
   -d \
   -p 8124:8124 \
+  -v ./data/:/data/ \
+  -e DATA_PERSISTENCE=1 \
   -e ENDPOINTS="eth-chain=https://rpc.ankr.com/eth,bsc-chain=https://rpc.ankr.com/bsc" \
   --name cached-eth-rpc \
   ghcr.io/tonyke-bot/cached-eth-rpc

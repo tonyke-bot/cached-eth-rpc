@@ -8,11 +8,9 @@ pub struct Cli {
     #[arg(short, long, default_value = "127.0.0.1")]
     pub bind: String,
 
-    /// Name of the person to greet
     #[arg(short, long, default_value = "8124")]
     pub port: u16,
 
-    /// Number of times to greet
     #[arg(short, long = "endpoint", value_parser = endpoint_parser)]
     pub endpoints: Vec<(String, Url)>,
 
