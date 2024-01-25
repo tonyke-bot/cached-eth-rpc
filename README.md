@@ -1,3 +1,5 @@
+# Further development has been moved to https://github.com/fuzzland/cached-eth-rpc
+
 # ETH RPC Cache Layer
 A simple http server to cache specific eth rpc requests in memory. Useful for massive repeatedly requests to ETH rpc endpoints. 
 Multiple endpoints/chains can be configured to be cached.
