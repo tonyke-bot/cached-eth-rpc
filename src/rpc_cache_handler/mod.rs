@@ -12,6 +12,7 @@ pub use eth_get_transaction_by_block_number_and_index::EthGetTransactionByBlockN
 pub use eth_get_transaction_by_hash::EthGetTransactionByHash;
 pub use eth_get_transaction_count::EthGetTransactionCount;
 pub use eth_get_transaction_receipt::EthGetTransactionReceipt;
+pub use eth_get_block_receipts::EthGetBlockReceipts;
 
 mod common;
 mod eth_call;
@@ -25,6 +26,7 @@ mod eth_get_transaction_by_block_number_and_index;
 mod eth_get_transaction_by_hash;
 mod eth_get_transaction_count;
 mod eth_get_transaction_receipt;
+mod eth_get_block_receipts;
 
 pub trait RpcCacheHandler: Send + Sync {
     fn method_name(&self) -> &'static str;
@@ -50,6 +52,7 @@ pub fn all_factories() -> Vec<RpcCacheHandlerFactory> {
         || Box::new(EthGetTransactionByBlockNumberAndIndex) as Box<dyn RpcCacheHandler>,
         || Box::new(EthGetTransactionByHash) as Box<dyn RpcCacheHandler>,
         || Box::new(EthGetTransactionCount) as Box<dyn RpcCacheHandler>,
+        || Box::new(EthGetBlockReceipts) as Box<dyn RpcCacheHandler>,
         || Box::<EthGetTransactionReceipt>::default() as Box<dyn RpcCacheHandler>,
     ]
 }
